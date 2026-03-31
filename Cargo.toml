@@ -1,0 +1,79 @@
+[package]
+name = "micro_sequentia"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+strum = "0.26"
+strum_macros = "0.26"
+
+# for rustc and clippy, a higher priority lint overrides one with lower priority
+# if no priority is given, it defaults to 0
+# (so if we deny an entire group with priority -1, we can allow/warn specific lints from it)
+[lints.rust]
+#---GROUPS (https://doc.rust-lang.org/beta/rustc/lints/groups.html#lint-groups)
+deprecated_safe = { level = "deny", priority = -1 }
+future_incompatible = { level = "deny", priority = -1 }
+keyword_idents = { level = "deny", priority = -1 }
+nonstandard_style = { level = "deny", priority = -1 }
+refining_impl_trait = { level = "deny", priority = -1 }
+# rust_2024_compatibility = "warn"  # when we wanna switch to Rust 2024
+unknown_or_malformed_diagnostic_attributes = { level = "deny", priority = -1 }
+unused = { level = "deny", priority = -1 }
+
+#---LINTS
+unfulfilled_lint_expectations = "deny"
+unknown_lints = "deny"
+unused_crate_dependencies = "deny"
+missing_copy_implementations = "warn"
+missing_debug_implementations = "warn"
+non_ascii_idents = "deny"
+noop_method_call = "deny"
+
+
+[lints.clippy]
+#---CATEGORIES (https://doc.rust-lang.org/clippy/lints.html#clippys-lints)
+suspicious = { level = "deny", priority = -1 }
+complexity = { level = "deny", priority = -1 }
+perf = { level = "deny", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
+cargo = { level = "warn", priority = -1 }
+
+#---LINTS (https://rust-lang.github.io/rust-clippy/rust-1.87.0/)
+# complexity
+type_complexity = "allow"
+# style
+enum_variant_names = "allow"
+# pedantic
+cast_precision_loss = "allow"
+default_trait_access = "allow"
+doc_markdown = "allow"
+items_after_statements = "allow"
+map_unwrap_or = "allow"
+missing_errors_doc = "allow"
+module_name_repetitions = "allow"
+must_use_candidate = "allow"
+struct_excessive_bools = "allow"
+struct_field_names = "allow"
+too_many_lines = "allow"
+trivially_copy_pass_by_ref = "allow"
+unnecessary_debug_formatting = "allow"
+wildcard_imports = "allow"
+# restriction
+create_dir = "warn"
+dbg_macro = "warn"
+exit = "warn"
+float_cmp_const = "warn"
+string_to_string = "warn"
+unused_result_ok = "warn"
+verbose_file_reads = "warn"
+# cargo
+cargo_common_metadata = "allow"
+multiple_crate_versions = "allow"
+# nursery
+cognitive_complexity = "warn"
+collection_is_never_read = "warn"
+fallible_impl_from = "warn"
+literal_string_with_formatting_args = "warn"
+option_if_let_else = "warn"
+suspicious_operation_groupings = "warn"
