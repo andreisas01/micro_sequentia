@@ -1,5 +1,6 @@
 #![expect(clippy::similar_names, clippy::cast_lossless)]
-use crate::{isa::*, parser::ParsedCode};
+
+use crate::assembler::{arhitecture::*, parser::ParsedCode};
 use strum::EnumCount;
 
 pub struct BitTable(Vec<u16>);
@@ -17,13 +18,13 @@ fn encode_instruction(instr: AddressableInstruction,
                 Operand::Immediate(_) => (0b00, 0b0000),
                 Operand::Direct(Register(reg)) => (0b01, reg as u16),
                 Operand::Indirect(Register(reg)) => (0b10, reg as u16),
-                Operand::Indexed(Register(reg), offset) => (0b11, reg as u16)
+                Operand::Indexed(Register(reg), _) => (0b11, reg as u16)
             };
             let (mad, rd) = match dst {
                 Operand::Immediate(_) => (0b00, 0b0000),
                 Operand::Direct(Register(reg)) => (0b01, reg as u16),
                 Operand::Indirect(Register(reg)) => (0b10, reg as u16),
-                Operand::Indexed(Register(reg), offset) => (0b11, reg as u16)
+                Operand::Indexed(Register(reg), _) => (0b11, reg as u16)
             };
 
             word |= mas << 10 | rs << 6 | mad << 4 | rd;
@@ -51,7 +52,7 @@ fn encode_instruction(instr: AddressableInstruction,
                 Operand::Immediate(_) => (0b00, 0b0000),
                 Operand::Direct(Register(reg)) => (0b01, reg as u16),
                 Operand::Indirect(Register(reg)) => (0b10, reg as u16),
-                Operand::Indexed(Register(reg), offset) => (0b11, reg as u16)
+                Operand::Indexed(Register(reg), _) => (0b11, reg as u16)
             };
 
             word |=  mad << 4 | rd;

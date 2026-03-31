@@ -1,4 +1,4 @@
-#![expect(clippy::upper_case_acronyms)]
+#![expect(missing_copy_implementations)]
 
 use std::str::FromStr;
 use strum::EnumCount;

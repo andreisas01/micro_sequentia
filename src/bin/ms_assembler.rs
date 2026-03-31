@@ -1,8 +1,8 @@
-#![expect(unused_variables, clippy::case_sensitive_file_extension_comparisons, clippy::cast_possible_truncation)]
+// ms_assembler binary crate
 
-mod isa;
-mod parser;
-mod encoder;
+#![expect(unused_crate_dependencies, clippy::case_sensitive_file_extension_comparisons)]
+
+use micro_sequentia::assembler::*;
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();

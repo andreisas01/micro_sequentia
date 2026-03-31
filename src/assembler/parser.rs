@@ -1,4 +1,4 @@
-use crate::isa::*;
+use crate::assembler::arhitecture::*;
 use std::str::FromStr;
 
 pub struct ParsedCode {
