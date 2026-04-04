@@ -1,34 +1,36 @@
 use crate::cpu::architecture;
 use super::microarchitecture::*;
 
-pub fn meta_program(isa: &architecture::ISA) {
-    let state = 0;
+pub fn meta_program(isa: &mut architecture::ISA) {
+    let mut state = 0;
 
-    let mut microcode = super::microarchitecture::MicroCode::new();
+    let mut micro_arch = super::microarchitecture::MicroCode::new();
 
     while isa.BPO {
+        use MicroSignal::*;
+
         match state {
             0 => {
-                microcode.MIR = microcode.MPM[microcode.MAR as usize];
+                micro_arch.process_microsignal(&LdMIR);
                 state = 1;
             }
 
             1 => {
-                if microcode.get_g(isa) == true {
-                    microcode.MAR =(microcode.MIR & JUMP_ADDR_MASK) + isa.get_index();
-                    state = 2;
+                if micro_arch.get_g(isa) == true {
+                    micro_arch.process_microsignal(&LdMAR(isa.IR, isa.INTR));
                 } else {
-                    microcode.MAR += 1;
+                    micro_arch.process_microsignal(&plus1MAR);
                 }
+                state = 0;
             }
 
-            2 => {
-                state = 3;
-            }
+            _ => unreachable!(),
+        }
 
-            3 => {
+        micro_arch.generate_signals(isa);
 
-            }
+        if isa.BE1_CIL == true {
+            isa.BPO = false;
         }
     }
 }
