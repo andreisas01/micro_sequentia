@@ -45,7 +45,7 @@ impl MicroCode {
     }
 
     pub fn get_index(&self, IR: u16, INTR: bool) -> u8 {
-        let index_idx = self.MIR & INDEX_MASK >> (INDEX_MASK.trailing_zeros());
+        let index_idx = (self.MIR & INDEX_MASK) >> (INDEX_MASK.trailing_zeros());
 
         match index_idx {
             0 => 0,
@@ -105,12 +105,12 @@ impl MicroCode {
     }
 
     pub fn generate_signals(&self, isa: &mut architecture::ISA) {
-        let sbus_idx = self.MIR & SBUS_MASK >> (SBUS_MASK.trailing_zeros());
-        let dbus_idx = self.MIR & DBUS_MASK >> (DBUS_MASK.trailing_zeros());
-        let alu_idx = self.MIR & ALU_MASK >> (ALU_MASK.trailing_zeros());
-        let rbus_idx = self.MIR & RBUS_MASK >> (RBUS_MASK.trailing_zeros());
-        let memory_idx = self.MIR & MEMORY_MASK >> (MEMORY_MASK.trailing_zeros());
-        let other_idx = self.MIR & OTHER_MASK >> (OTHER_MASK.trailing_zeros());
+        let sbus_idx = (self.MIR & SBUS_MASK) >> (SBUS_MASK.trailing_zeros());
+        let dbus_idx = (self.MIR & DBUS_MASK) >> (DBUS_MASK.trailing_zeros());
+        let alu_idx = (self.MIR & ALU_MASK) >> (ALU_MASK.trailing_zeros());
+        let rbus_idx = (self.MIR & RBUS_MASK) >> (RBUS_MASK.trailing_zeros());
+        let memory_idx = (self.MIR & MEMORY_MASK) >> (MEMORY_MASK.trailing_zeros());
+        let other_idx = (self.MIR & OTHER_MASK) >> (OTHER_MASK.trailing_zeros());
 
         let sbus_signal: signals::SBUS =
             if let Some(signal) = FromPrimitive::from_u64(sbus_idx) { signal }
@@ -146,7 +146,7 @@ fn get_nth_bit(value: u16, n: u8) -> bool {
 
 #[allow(clippy::missing_panics_doc)]
 fn read_microprogram() -> Vec<u64> {
-    let microprogram = std::fs::read_to_string("src/cpu/control_unit/microprogram").expect("Failed to read microprogram.txt.");
+    let microprogram = std::fs::read_to_string("src/processor/control_unit/microprogram").expect("Failed to read microprogram.txt.");
     microprogram
         .lines()
         .map(|line| line.trim_start_matches("0x").trim())

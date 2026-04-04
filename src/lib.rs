@@ -1,7 +1,8 @@
 // micro_sequentia library crate
 
 #![expect(missing_debug_implementations, missing_copy_implementations, clippy::new_without_default,
-    clippy::cast_possible_truncation, clippy::bool_comparison, clippy::cast_lossless, non_snake_case)]
+    clippy::cast_possible_truncation, clippy::bool_comparison, clippy::cast_lossless, non_snake_case,
+    clippy::uninlined_format_args)]
 #![allow(clippy::enum_glob_use)]
 
 pub mod assembler {

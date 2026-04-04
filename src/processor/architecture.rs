@@ -108,17 +108,17 @@ impl ISA {
                 DBUS => self.DBUS,
                 SUM => {
                     Cout = (self.SBUS as u32 + self.DBUS as u32) > u16::MAX as u32;
-                    DCR = !((self.SBUS & 0x8000 != 0) ^ (self.DBUS & 0x8000 != 0)) & // signS !^ signD   &
-                        (((self.SBUS + self.DBUS) & 0x8000 != 0) ^ Cout);           // signR ^ carryOut
+                    DCR = !((self.SBUS & 0x8000 != 0) ^ (self.DBUS & 0x8000 != 0)) &    // signS !^ signD   &
+                        (((self.SBUS as u32 + self.DBUS as u32) & 0x8000 != 0) ^ Cout); // signR ^ carryOut
 
-                    self.SBUS + self.DBUS
+                    (self.SBUS as u32 + self.DBUS as u32) as u16
                 },
                 SUB => {
                     Cout = (self.SBUS as u32 - self.DBUS as u32) > u16::MAX as u32;
-                    DCR = !((self.SBUS & 0x8000 != 0) ^ (self.DBUS & 0x8000 != 0)) & // signS !^ signD   &
-                        (((self.SBUS - self.DBUS) & 0x8000 != 0) ^ Cout);           // signR ^ carryOut
+                    DCR = !((self.SBUS & 0x8000 != 0) ^ (self.DBUS & 0x8000 != 0)) &    // signS !^ signD   &
+                        (((self.SBUS as u32 - self.DBUS as u32) & 0x8000 != 0) ^ Cout); // signR ^ carryOut
                     
-                    self.SBUS - self.DBUS
+                    (self.SBUS as u32 - self.DBUS as u32) as u16
                 },
                 AND => self.SBUS & self.DBUS,
                 OR => self.SBUS | self.DBUS,
@@ -245,6 +245,8 @@ impl ISA {
         println!();
         println!("BPO: {} BE0_ACLOW: {} BE1_CIL: {} INTR: {} INTA: {}",
             self.BPO, self.BE0_ACLOW, self.BE1_CIL, self.INTR, self.INTA);
+        print!("MEMORY DUMP: ");
+        self.MEM.print_memory_dump();
         println!("--------------------------------------------------");
     }
 

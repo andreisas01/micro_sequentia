@@ -43,6 +43,14 @@ impl MemoryInterface {
         }
     }
 
+    pub fn print_memory_dump(&self) {
+        for word in &self.memory.data {
+            print!("{:04X} ", word);
+
+            if *word == 0 { break; }
+        }
+        println!();
+    }
 }
 
 // local memory command device (DCLM)
