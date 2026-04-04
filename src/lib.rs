@@ -1,8 +1,8 @@
 // micro_sequentia library crate
 
 #![expect(missing_debug_implementations, missing_copy_implementations, clippy::new_without_default,
-    clippy::cast_possible_truncation, clippy::bool_comparison, clippy::cast_lossless,
-    unused)]
+    clippy::cast_possible_truncation, clippy::bool_comparison, clippy::cast_lossless, non_snake_case)]
+#![allow(clippy::enum_glob_use)]
 
 pub mod assembler {
     #![expect(missing_debug_implementations, clippy::cast_possible_truncation)]
@@ -12,16 +12,15 @@ pub mod assembler {
     pub mod encoder;
 }
 
-pub mod cpu {
-    #![expect(non_snake_case, non_camel_case_types)]
-    #![allow(clippy::enum_glob_use)]
+pub mod processor {
+    #![expect(non_camel_case_types)]
+
+    use crate::memory;
 
     pub mod architecture;
     pub mod signals;
 
     pub mod control_unit {
-        
-
         pub mod sequencer;
         pub(super) mod microarchitecture;
     }
@@ -32,11 +31,17 @@ pub mod cpu {
     }
 
     impl CPU {
-        pub fn new() -> Self {
+        pub fn new(memory: memory::MemoryInterface) -> Self {
             Self {
                 control_unit: control_unit::microarchitecture::MicroCode::new(),
-                isa: architecture::ISA::new(),
+                isa: architecture::ISA::new(memory),
             }
+        }
+
+        pub fn run(&mut self) {
+            control_unit::sequencer::run_meta_program(&mut self.isa, &mut self.control_unit);
         }
     }
 }
+
+pub mod memory;

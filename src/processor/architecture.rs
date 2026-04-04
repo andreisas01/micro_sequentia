@@ -1,9 +1,9 @@
 #![expect(non_snake_case, dead_code, clippy::cast_sign_loss, clippy::cast_possible_wrap)]
 
 use super::signals;
+use super::super::memory::MemoryInterface;
 
 pub struct ISA {
-    pub MEM: Vec<u16>,
     pub SBUS: u16,
     pub DBUS: u16,
     pub RBUS: u16,
@@ -21,12 +21,12 @@ pub struct ISA {
     pub BE1_CIL: bool, // Exception 1 - Illegal Code
     pub INTR: bool, // Interrupt Request
     pub INTA: bool, // Interrupt Acknowledge
+    pub MEM: MemoryInterface,
 }
 
 impl ISA {
-    pub fn new() -> Self {
+    pub fn new(memory: MemoryInterface) -> Self {
         Self {
-            MEM: vec![0; 65536],
             SBUS: 0,
             DBUS: 0,
             RBUS: 0,
@@ -44,6 +44,7 @@ impl ISA {
             BE1_CIL: false,
             INTR: false,
             INTA: false,
+            MEM: memory,
         }
     }
 
@@ -211,15 +212,8 @@ impl ISA {
                 },
             }
         }
-        {   use signals::Memory::*;
-
-            match memory_signal {
-                None => {},
-                IFCH => self.IR = self.MEM[self.ADR as usize],
-                READ => self.MDR = self.MEM[self.ADR as usize],
-                WRITE => self.MEM[self.ADR as usize] = self.RBUS,
-            }
-
+        {   
+            self.MEM.process_signal(memory_signal, &mut self.IR, &mut self.ADR, &mut self.MDR);
         }
         {   use signals::RBUS::*;
 
@@ -239,6 +233,19 @@ impl ISA {
                 PmMDR => self.MDR = self.RBUS,
             }
         }
+    }
+
+    pub fn print_state(&self, micro_arch: &super::control_unit::microarchitecture::MicroCode) {
+        println!("MIR: {:04X}, MAR: {:04X}", micro_arch.MIR, micro_arch.MAR);
+        println!("SBUS: {:04X} DBUS: {:04X} RBUS: {:04X} FLAG: {:08b} SP: {:04X} T: {:04X} PC: {:04X} IVR: {:04X} ADR: {:04X} MDR: {:04X} IR: {:04X}",
+            self.SBUS, self.DBUS, self.RBUS, self.FLAG, self.SP, self.T, self.PC, self.IVR, self.ADR, self.MDR, self.IR);
+        for i in 0..16 {
+            print!("R{}:{:04X} ", i, self.RG[i]);
+        }
+        println!();
+        println!("BPO: {} BE0_ACLOW: {} BE1_CIL: {} INTR: {} INTA: {}",
+            self.BPO, self.BE0_ACLOW, self.BE1_CIL, self.INTR, self.INTA);
+        println!("--------------------------------------------------");
     }
 
     // -- getters and setters for FLAG bits --

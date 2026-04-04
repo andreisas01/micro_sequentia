@@ -1,10 +1,10 @@
-use crate::cpu::architecture;
+use std::{thread::sleep, time::Duration};
+
+use crate::processor::architecture;
 use super::microarchitecture::*;
 
-pub fn meta_program(isa: &mut architecture::ISA) {
+pub fn run_meta_program(isa: &mut architecture::ISA, micro_arch: &mut MicroCode) {
     let mut state = 0;
-
-    let mut micro_arch = super::microarchitecture::MicroCode::new();
 
     while isa.BPO {
         use MicroSignal::*;
@@ -32,5 +32,8 @@ pub fn meta_program(isa: &mut architecture::ISA) {
         if isa.BE1_CIL == true {
             isa.BPO = false;
         }
+
+        isa.print_state(micro_arch);
+        sleep(Duration::from_millis(500));
     }
 }
