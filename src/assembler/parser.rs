@@ -1,4 +1,4 @@
-use crate::assembler::arhitecture::*;
+use crate::{assembler::arhitecture::*, memory};
 use std::str::FromStr;
 
 pub struct ParsedCode {
@@ -120,7 +120,7 @@ fn normalize_edgecases(input: &str) -> String {
          .replace(':', ":\n")
 }
 
-fn get_instruction_size(instruction: &Instruction) -> Result<InstructionSize, String> {
+fn get_instruction_size(instruction: &Instruction) -> Result<InstructionSize, String> {                             
     match instruction {
         Instruction::TwoOperands { src, dst, .. } => {
             let src_extra_size = match src {
@@ -132,7 +132,7 @@ fn get_instruction_size(instruction: &Instruction) -> Result<InstructionSize, St
                 Operand::Direct(_) | Operand::Indirect(_) => false
             };
             
-            InstructionSize::from_u8(1 + u8::from(src_extra_size) + u8::from(dst_extra_size))
+            InstructionSize::from_u8(2 + 2 * u8::from(src_extra_size) + 2 * u8::from(dst_extra_size))
         }
         Instruction::OneOperand { dst, .. } => match dst {
             Operand::Immediate(_) | Operand::Indexed(_, _) => Ok(InstructionSize::DoubleWord),
@@ -153,7 +153,7 @@ pub fn parse_text(input: &str) -> Result<ParsedCode, String> {
             continue;
         }
 
-        let address = instructions.last().map_or(START_ADDRESS, |last| last.address + last.size.clone() as u16);
+        let address = instructions.last().map_or(memory::START_ADDRESS, |last| last.address + last.size.clone() as u16);
 
         if let Some(label) = parse_label(trimmed_line) {
             symbol_table.insert(label.clone(), address);
