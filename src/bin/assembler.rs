@@ -1,4 +1,4 @@
-// ms_assembler binary crate
+// assembler binary crate
 
 #![expect(unused_crate_dependencies, clippy::case_sensitive_file_extension_comparisons)]
 
