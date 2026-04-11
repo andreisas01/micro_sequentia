@@ -1,4 +1,4 @@
-// micro_sequencia binary crate
+// processor binary crate
 
 #![expect(unused_crate_dependencies, clippy::case_sensitive_file_extension_comparisons)]
 
