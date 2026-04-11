@@ -6,7 +6,8 @@
 #![allow(clippy::enum_glob_use)]
 
 pub mod assembler {
-    #![expect(missing_debug_implementations, clippy::cast_possible_truncation)]
+    #![expect(missing_debug_implementations, clippy::cast_possible_truncation, clippy::needless_range_loop,
+            clippy::cast_sign_loss, clippy::cast_possible_wrap)]
 
     pub(super) mod arhitecture; // internal module
     pub mod parser;

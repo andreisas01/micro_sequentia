@@ -32,7 +32,7 @@ fn main() {
         }
     };
 
-    let bit_table = encoder::BitTable::generate();
+    let bit_table = encoder::OpcodeTable::generate();
 
     std::fs::write(format!("{}.obj", input_file.trim_end_matches(".asm")),
     encoder::encode_parsed_code(parsed_code, &bit_table)).unwrap();

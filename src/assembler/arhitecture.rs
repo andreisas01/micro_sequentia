@@ -121,8 +121,6 @@ pub enum OpcodeB4 {
     POP_FLAG
 }
 
-pub const START_ADDRESS: u16 = 0x0000;
-
 pub struct AddressableInstruction {
     pub instruction: Instruction,
     pub address: u16,
@@ -132,14 +130,14 @@ pub struct AddressableInstruction {
 pub type SymbolTable = std::collections::HashMap<String, u16>;
 
 #[derive(Clone, Debug)]
-pub enum InstructionSize { Word = 1, DoubleWord = 2, TripleWord = 3 }
+pub enum InstructionSize { Word = 2, DoubleWord = 4, TripleWord = 6 }
 
 impl InstructionSize {
     pub fn from_u8(value: u8) -> Result<Self, String> {
         match value {
-            1 => Ok(InstructionSize::Word),
-            2 => Ok(InstructionSize::DoubleWord),
-            3 => Ok(InstructionSize::TripleWord),
+            2 => Ok(InstructionSize::Word),
+            4 => Ok(InstructionSize::DoubleWord),
+            6 => Ok(InstructionSize::TripleWord),
             _ => Err(format!("Invalid instruction size: {value}")),
         }
     }
@@ -157,6 +155,30 @@ impl Opcode {
             Opcode::B3(op) => (op as u16) + OpcodeB1::COUNT as u16 + OpcodeB2::COUNT as u16,
             Opcode::B4(op) => op as u16 + OpcodeB1::COUNT as u16 + OpcodeB2::COUNT as u16 + OpcodeB3::COUNT as u16,
         }
+    }
+
+    pub fn get_B4_opcodes() -> Vec<u16> {
+        vec![
+            0xE0F7,
+            0xE0FE,
+            0xE0FB,
+            0xE0FD,
+            0xE0F0,
+            0xE108,
+            0xE101,
+            0xE104,
+            0xE102,
+            0xE10F,
+            0xE200,
+            0xEA00,
+            0xEC00,
+            0xE300,
+            0xEB00,
+            0xE600,
+            0xE700,
+            0xE800,
+            0xE900
+        ]
     }
 }
 

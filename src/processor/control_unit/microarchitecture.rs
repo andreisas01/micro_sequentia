@@ -53,7 +53,7 @@ impl MicroCode {
                 let CL1: bool = get_nth_bit(IR, 15) &  get_nth_bit(IR, 14);
                 let CL0: bool = get_nth_bit(IR, 15) & !get_nth_bit(IR, 13);
 
-                (CL1 as u8) << 1 | (CL0 as u8)
+                (u8::from(CL1)) << 1 | (u8::from(CL1) ^ u8::from(CL0)) // gray to binary
             }
             2 => {
                 let IR11 = get_nth_bit(IR, 11);

@@ -3,11 +3,11 @@
 use crate::assembler::{arhitecture::*, parser::ParsedCode};
 use strum::EnumCount;
 
-pub struct BitTable(Vec<u16>);
+pub struct OpcodeTable(Vec<u16>);
 
 // returns little-endian byte representation of the instruction
 fn encode_instruction(instr: AddressableInstruction,
-    symbol_table: &SymbolTable, bit_table: &BitTable) -> Vec<u8> {
+    symbol_table: &SymbolTable, bit_table: &OpcodeTable) -> Vec<u8> {
 
     let mut words = Vec::<u16>::new();
     match instr.instruction {
@@ -70,7 +70,7 @@ fn encode_instruction(instr: AddressableInstruction,
 
             let target_address = symbol_table.get(&label).unwrap();
             // relative to PC
-            let offset = target_address - (instr.address + instr.size as u16);
+            let offset = (*target_address as i16 - (instr.address + instr.size as u16) as i16) as u16 & 0x00FF;
 
             word |= offset;
             words.push(word);
@@ -88,7 +88,7 @@ fn encode_instruction(instr: AddressableInstruction,
     bytes
 }
 
-pub fn encode_parsed_code(parsed_code: ParsedCode, bit_table: &BitTable) -> Vec<u8> {
+pub fn encode_parsed_code(parsed_code: ParsedCode, bit_table: &OpcodeTable) -> Vec<u8> {
     let mut encoded = Vec::new();
 
     for instr in parsed_code.instructions {
@@ -99,23 +99,24 @@ pub fn encode_parsed_code(parsed_code: ParsedCode, bit_table: &BitTable) -> Vec<
     encoded
 }
 
-impl BitTable {
+impl OpcodeTable {
     pub fn generate() -> Self {
         let mut bit_table = Vec::new();
+        let B4_opcodes = Opcode::get_B4_opcodes();
 
         for i in 0..OpcodeB1::COUNT {
             bit_table.push((i << 12) as u16);
         }
         for i in 0..OpcodeB2::COUNT {
-            bit_table.push((i << 6 | 0x8000) as u16);
+            bit_table.push((i << 8 | 0x8000) as u16);
         }
         for i in 0..OpcodeB3::COUNT {
             bit_table.push((i << 8 | 0xC000) as u16);
         }
         for i in 0..OpcodeB4::COUNT {
-            bit_table.push((i | 0xE000) as u16);
+            bit_table.push(B4_opcodes[i]);
         }
 
-        BitTable(bit_table)
+        OpcodeTable(bit_table)
     }
 }

@@ -1,7 +1,7 @@
-#![expect(non_snake_case, dead_code, clippy::cast_sign_loss, clippy::cast_possible_wrap)]
+#![expect(non_snake_case, clippy::cast_sign_loss, clippy::cast_possible_wrap, clippy::match_same_arms)]
 
 use super::signals;
-use super::super::memory::MemoryInterface;
+use super::super::{memory, memory::MemoryInterface};
 
 pub struct ISA {
     pub SBUS: u16,
@@ -31,9 +31,9 @@ impl ISA {
             DBUS: 0,
             RBUS: 0,
             FLAG: 0,
-            SP: 0,
+            SP: memory::START_ADDRESS + memory::MEMORY_SIZE, // END_ADDRESS
             T: 0,
-            PC: 0,
+            PC: memory::START_ADDRESS,
             IVR: 0,
             ADR: 0,
             MDR: 0,
@@ -55,14 +55,47 @@ impl ISA {
         let mut Zr: bool = false;
         let mut Sr: bool = false;
         let mut DCR: bool = false;
+        let mut Cin: bool = false;
 
-        {   use signals::SBUS::*;
+        {   // other operation 1
+            use signals::Other::*;
+
+            match other_signal {
+                None => {},
+                plus2SP => self.SP += 2,
+                minus2SP => self.SP -= 2,
+                plus2PC => {},
+                A1BE0 => self.BE0_ACLOW = true,
+                A1BE1 => self.BE1_CIL = true,
+                PdCONDaritm => {},
+                Cin_PdCONDaritm => {
+                    Cin = true;
+                    {}
+                },
+                PdCONDlog => {},
+                A1BVI => self.set_BVI(true),
+                A0BVI => self.set_BVI(false),
+                A0BPO => self.BPO = false,
+                INTA_minus2SP => {
+                    self.INTA = true;
+                    self.SP -= 2;
+                },
+                A0BE_A0BI => {
+                    self.BE0_ACLOW = false;
+                    self.BE1_CIL = false;
+                    self.set_BVI(false);
+                },
+            }
+
+        }
+        {   // sbus source
+            use signals::SBUS::*;
             
             self.SBUS = match sbus_signal {
                 None => self.SBUS,
                 PdFLAG => self.FLAG,
                 PdRG => {
-                    let RS = (self.IR & RS_MASK >> RS_MASK.trailing_zeros()) as usize;
+                    let RS = ((self.IR & RS_MASK) >> RS_MASK.trailing_zeros()) as usize;
 
                     self.RG[RS]
                 },
@@ -73,18 +106,27 @@ impl ISA {
                 PdIVR => self.IVR,
                 PdADR => self.ADR,
                 PdMDR => self.MDR,
-                PdIR_0_7 => self.IR & 0x00FF,
+                PdIR_0_7 => {
+                    let sign_bit = self.IR & 0x0080 != 0;
+                    if sign_bit {
+                        (self.IR & 0x00FF) | 0xFF00
+                    }
+                    else {
+                        self.IR & 0x00FF
+                    }
+                },
                 Pd0 => 0,
                 PdNeg1 => u16::MAX,
             };
         }
-        {   use signals::DBUS::*;
+        {   // dbus source
+            use signals::DBUS::*;
 
             self.DBUS = match dbus_signal {
                 None => self.DBUS,
                 PdFLAG => self.FLAG,
                 PdRG => {
-                    let RD = (self.IR & RD_MASK >> RD_MASK.trailing_zeros()) as usize;
+                    let RD = ((self.IR & RD_MASK) >> RD_MASK.trailing_zeros()) as usize;
 
                     self.RG[RD]
                 },
@@ -95,30 +137,47 @@ impl ISA {
                 PdADR => self.ADR,
                 PdMDR => self.MDR,
                 PdMDRNeg => !self.MDR,
-                PdIR_0_7 => self.IR & 0x00FF,
+                PdIR_0_7 => {
+                    let sign_bit = self.IR & 0x0080 != 0;
+                    if sign_bit {
+                        (self.IR & 0x00FF) | 0xFF00
+                    }
+                    else {
+                        self.IR & 0x00FF
+                    }
+                },
                 Pd0 => 0,
                 PdNeg1 => u16::MAX,
             };
         }
-        {   use signals::ALU::*;
+        {   // alu operation
+            use signals::ALU::*;
 
             self.RBUS = match alu_signal {
                 None => self.RBUS,
                 SBUS => self.SBUS,
                 DBUS => self.DBUS,
                 SUM => {
-                    Cout = (self.SBUS as u32 + self.DBUS as u32) > u16::MAX as u32;
-                    DCR = !((self.SBUS & 0x8000 != 0) ^ (self.DBUS & 0x8000 != 0)) &    // signS !^ signD   &
-                        (((self.SBUS as u32 + self.DBUS as u32) & 0x8000 != 0) ^ Cout); // signR ^ carryOut
+                    let result = self.SBUS as u32 + self.DBUS as u32 + Cin as u32;
+                    let signS = self.SBUS & 0x8000 != 0;
+                    let signD = self.DBUS & 0x8000 != 0;
+                    let signR = result & 0x8000 != 0;
 
-                    (self.SBUS as u32 + self.DBUS as u32) as u16
+                    Cout = result > (u16::MAX as u32);
+                    DCR = !(signS ^ signD) & (signR ^ Cout);
+
+                    result as u16
                 },
                 SUB => {
-                    Cout = (self.SBUS as u32 - self.DBUS as u32) > u16::MAX as u32;
-                    DCR = !((self.SBUS & 0x8000 != 0) ^ (self.DBUS & 0x8000 != 0)) &    // signS !^ signD   &
-                        (((self.SBUS as u32 - self.DBUS as u32) & 0x8000 != 0) ^ Cout); // signR ^ carryOut
-                    
-                    (self.SBUS as u32 - self.DBUS as u32) as u16
+                    let result = self.SBUS as u32 - self.DBUS as u32 + Cin as u32;
+                    let signS = self.SBUS & 0x8000 != 0;
+                    let signD = self.DBUS & 0x8000 != 0;
+                    let signR = result & 0x8000 != 0;
+
+                    Cout = result > (u16::MAX as u32);
+                    DCR = !(signS ^ signD) & (signR ^ Cout);
+
+                    result as u16
                 },
                 AND => self.SBUS & self.DBUS,
                 OR => self.SBUS | self.DBUS,
@@ -172,57 +231,15 @@ impl ISA {
             if self.RBUS == 0           { Zr = true; }
             if self.RBUS & 0x8000 != 0  { Sr = true; }
         }
-        {   use signals::Other::*;
-
-            match other_signal {
-                None => {},
-                plus2SP => self.SP += 2,
-                minus2SP => self.SP -= 2,
-                plus2PC => self.PC += 2,
-                A1BE0 => self.BE0_ACLOW = true,
-                A1BE1 => self.BE1_CIL = true,
-                PdCONDaritm => {
-                    self.set_C(Cout);
-                    self.set_Z(Zr);
-                    self.set_S(Sr);
-                    self.set_V(DCR);
-                },
-                Cin_PdCONDaritm => {
-                    self.RBUS += 1;
-                    self.set_C(Cout);
-                    self.set_Z(Zr);
-                    self.set_S(Sr);
-                    self.set_V(DCR);
-                },
-                PdCONDlog => {
-                    self.set_Z(Zr);
-                    self.set_S(Sr);
-                },
-                A1BVI => self.set_BVI(true),
-                A0BVI => self.set_BVI(false),
-                A0BPO => self.BPO = false,
-                INTA_minus2SP => {
-                    self.INTA = true;
-                    self.SP -= 2;
-                },
-                A0BE_A0BI => {
-                    self.BE0_ACLOW = false;
-                    self.BE1_CIL = false;
-                    self.set_BVI(false);
-                },
-            }
-        }
-        {   
-            self.MEM.process_signal(memory_signal, &mut self.IR, &mut self.ADR, &mut self.MDR);
-        }
-        {   use signals::RBUS::*;
+        {   // rbus destination
+            use signals::RBUS::*;
 
             match rbus_signal {
                 None => {},
                 PmFLAG => self.FLAG = self.RBUS,
                 PmFLAG_3_0 => self.FLAG = (self.FLAG & 0b1111_0000) | (self.RBUS & 0b0000_1111),
                 PmRG => {
-                    let RD = (self.IR & RD_MASK >> RD_MASK.trailing_zeros()) as usize;
+                    let RD = ((self.IR & RD_MASK) >> RD_MASK.trailing_zeros()) as usize;
                     self.RG[RD] = self.RBUS;
                 },
                 PmSP => self.SP = self.RBUS,
@@ -233,20 +250,58 @@ impl ISA {
                 PmMDR => self.MDR = self.RBUS,
             }
         }
+        {   // memory operation
+            self.MEM.process_signal(memory_signal, &mut self.IR, &mut self.ADR, &mut self.MDR);
+        }
+        {   // other operation 2
+            use signals::Other::*;
+
+            match other_signal {
+                None => {},
+                plus2SP => {},
+                minus2SP => {},
+                plus2PC => self.PC += 2,
+                A1BE0 => {},
+                A1BE1 => {},
+                PdCONDaritm => {
+                    self.set_C(Cout);
+                    self.set_Z(Zr);
+                    self.set_S(Sr);
+                    self.set_V(DCR);
+                },
+                Cin_PdCONDaritm => {
+                    {}
+                    self.set_C(Cout);
+                    self.set_Z(Zr);
+                    self.set_S(Sr);
+                    self.set_V(DCR);
+                },
+                PdCONDlog => {
+                    self.set_Z(Zr);
+                    self.set_S(Sr);
+                },
+                A1BVI => {},
+                A0BVI => {},
+                A0BPO => {},
+                INTA_minus2SP => {},
+                A0BE_A0BI => {},
+            }
+        }
     }
 
     pub fn print_state(&self, micro_arch: &super::control_unit::microarchitecture::MicroCode) {
         println!("MIR: {:04X}, MAR: {:04X}", micro_arch.MIR, micro_arch.MAR);
+        println!("g: {}", micro_arch.get_g(self));
         println!("SBUS: {:04X} DBUS: {:04X} RBUS: {:04X} FLAG: {:08b} SP: {:04X} T: {:04X} PC: {:04X} IVR: {:04X} ADR: {:04X} MDR: {:04X} IR: {:04X}",
             self.SBUS, self.DBUS, self.RBUS, self.FLAG, self.SP, self.T, self.PC, self.IVR, self.ADR, self.MDR, self.IR);
         for i in 0..16 {
             print!("R{}:{:04X} ", i, self.RG[i]);
         }
         println!();
+        println!("FLAG bits: BVI: {} C: {} Z: {} S: {} V: {}",
+            self.get_BVI(), self.get_C(), self.get_Z(), self.get_S(), self.get_V());
         println!("BPO: {} BE0_ACLOW: {} BE1_CIL: {} INTR: {} INTA: {}",
             self.BPO, self.BE0_ACLOW, self.BE1_CIL, self.INTR, self.INTA);
-        print!("MEMORY DUMP: ");
-        self.MEM.print_memory_dump();
         println!("--------------------------------------------------");
     }
 

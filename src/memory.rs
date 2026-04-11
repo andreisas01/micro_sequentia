@@ -1,5 +1,8 @@
 use super::processor::signals;
 
+pub const START_ADDRESS: u16 = 0x0000;
+pub const MEMORY_SIZE: u16 = 0x1000; // 4KiB
+
 struct Memory {
     data: Vec<u16>,
 }
@@ -15,7 +18,7 @@ pub fn load_program(program_data: &[u8]) -> MemoryInterface {
 
     for (i, chunk) in program_data.chunks(2).enumerate() {
         let value = if chunk.len() == 2 {
-            u16::from_be_bytes([chunk[0], chunk[1]])
+            u16::from_le_bytes([chunk[0], chunk[1]]) // little-endian
         } else {
             (chunk[0] as u16) << 8
         };
@@ -28,7 +31,7 @@ pub fn load_program(program_data: &[u8]) -> MemoryInterface {
 impl MemoryInterface {
     fn new() -> Self {
         Self {
-            memory: Memory { data: vec![0; 65536] },
+            memory: Memory { data: vec![0; (MEMORY_SIZE / 2) as usize] },
         }
     }
 
@@ -44,10 +47,9 @@ impl MemoryInterface {
     }
 
     pub fn print_memory_dump(&self) {
+        print!("MEMORY DUMP: ");
         for word in &self.memory.data {
             print!("{:04X} ", word);
-
-            if *word == 0 { break; }
         }
         println!();
     }
@@ -56,10 +58,10 @@ impl MemoryInterface {
 // local memory command device (DCLM)
 impl Controller {
     fn read(memory: &Memory, address: u16) -> u16 {
-        memory.data[address as usize]
+        memory.data[(address / 2) as usize]
     }
 
     fn write(memory: &mut Memory, address: u16, value: u16) {
-        memory.data[address as usize] = value;
+        memory.data[(address / 2) as usize] = value;
     }
 }
