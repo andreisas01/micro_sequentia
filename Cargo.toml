@@ -4,8 +4,10 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+eframe = "0.33.3"
 num-derive = "0.4.2"
 num-traits = "0.2.19"
+rfd = "0.15.4"
 strum = "0.26"
 strum_macros = "0.26"
 

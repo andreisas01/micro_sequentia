@@ -1,6 +1,6 @@
 #![expect(clippy::cast_lossless)]
 
-use crate::processor::{architecture, signals};  
+use crate::processor::{architecture, control_unit::sequencer::Sequencer, signals};  
 use num_traits::FromPrimitive;
 
 pub struct MicroCode {
@@ -13,6 +13,11 @@ pub enum MicroSignal {
     LdMAR(u16, bool), // IR, INTR
     plus1MAR,
     LdMIR,
+}
+
+pub struct ControlUnit {
+    pub micro_code: MicroCode,
+    pub sequencer: Sequencer,
 }
 
 impl MicroCode {
@@ -137,6 +142,15 @@ impl MicroCode {
             else { isa.BE1_CIL = true; return; };
 
         isa.execute(&sbus_signal, &dbus_signal, &rbus_signal, &alu_signal, &memory_signal, &other_signal);
+    }
+}
+
+impl ControlUnit {
+    pub fn new() -> Self {
+        Self {
+            micro_code: MicroCode::new(),
+            sequencer: Sequencer { state: 0 },
+        }
     }
 }
 

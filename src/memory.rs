@@ -29,7 +29,7 @@ pub fn load_program(program_data: &[u8]) -> MemoryInterface {
 }
 
 impl MemoryInterface {
-    fn new() -> Self {
+    pub fn new() -> Self {
         Self {
             memory: Memory { data: vec![0; (MEMORY_SIZE / 2) as usize] },
         }
@@ -52,6 +52,18 @@ impl MemoryInterface {
             print!("{:04X} ", word);
         }
         println!();
+    }
+
+    pub fn dump_bytes(&self) -> Vec<u8> {
+        let mut bytes = Vec::with_capacity(self.memory.data.len() * 2);
+
+        for word in &self.memory.data {
+            let [lo, hi] = word.to_le_bytes();
+            bytes.push(lo);
+            bytes.push(hi);
+        }
+
+        bytes
     }
 }
 

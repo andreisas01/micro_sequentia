@@ -40,11 +40,6 @@ fn parse_operand(token: &str) -> Result<Operand, String> {
     }
 }
 
-fn parse_label(line: &str) -> Option<String> {
-    let trimmed = line.trim();
-    trimmed.strip_suffix(':').map(std::string::ToString::to_string)
-}
-
 fn parse_instruction(line: &str) -> Result<Instruction, String> {
     let tokens: Vec<&str> = line
         .split([' ', ','])
@@ -117,7 +112,6 @@ fn normalize_edgecases(input: &str) -> String {
          .map(|line| { line.find(['#', ';']).map_or(line, |idx| &line[..idx]) })
          .collect::<Vec<&str>>()
          .join("\n")
-         .replace(':', ":\n")
 }
 
 fn get_instruction_size(instruction: &Instruction) -> Result<InstructionSize, String> {                             
@@ -148,17 +142,23 @@ pub fn parse_text(input: &str) -> Result<ParsedCode, String> {
     let input = normalize_edgecases(input);
 
     for (line_number, line) in input.lines().enumerate() {
-        let trimmed_line = line.trim();
+        let mut trimmed_line = line.trim();
         if trimmed_line.is_empty() {
             continue;
         }
 
         let address = instructions.last().map_or(memory::START_ADDRESS, |last| last.address + last.size.clone() as u16);
 
-        if let Some(label) = parse_label(trimmed_line) {
-            symbol_table.insert(label.clone(), address);
-            // println!("{address:#06X} : {label}");
-            continue;
+        if let Some((label_part, rest)) = trimmed_line.split_once(':') {
+            let label = label_part.trim();
+            if !label.is_empty() {
+                symbol_table.insert(label.to_string(), address);
+            }
+
+            trimmed_line = rest.trim();
+            if trimmed_line.is_empty() {
+                continue;
+            }
         }
 
         let instruction = parse_instruction(trimmed_line)
@@ -167,7 +167,12 @@ pub fn parse_text(input: &str) -> Result<ParsedCode, String> {
         let size = get_instruction_size(&instruction)?;
 
         // println!("{address:#06X} : {instruction:?}");
-        instructions.push(AddressableInstruction { instruction, address, size });
+        instructions.push(AddressableInstruction {
+            instruction,
+            address,
+            size,
+            source_line: line_number + 1,
+        });
     }
     Ok(ParsedCode { instructions, symbol_table })
 }

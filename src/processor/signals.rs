@@ -1,6 +1,6 @@
 use num_derive::FromPrimitive;    
 
-#[derive(FromPrimitive)]
+#[derive(Debug, FromPrimitive)]
 pub enum SBUS {
     None,
     PdFLAG,
@@ -17,7 +17,7 @@ pub enum SBUS {
     PdNeg1,
 }
 
-#[derive(FromPrimitive)]
+#[derive(Debug, FromPrimitive)]
 pub enum DBUS {
     None,
     PdFLAG,
@@ -34,7 +34,7 @@ pub enum DBUS {
     PdNeg1,
 }
 
-#[derive(FromPrimitive)]
+#[derive(Debug, FromPrimitive)]
 pub enum ALU {
     None,
     SBUS,
@@ -53,7 +53,7 @@ pub enum ALU {
     RRC,
 }
 
-#[derive(FromPrimitive)]
+#[derive(Debug, FromPrimitive)]
 pub enum RBUS {
     None,
     PmFLAG,
@@ -67,7 +67,7 @@ pub enum RBUS {
     PmMDR,
 }
 
-#[derive(FromPrimitive)]
+#[derive(Debug, FromPrimitive)]
 pub enum Memory {
     None,
     IFCH,
@@ -75,7 +75,7 @@ pub enum Memory {
     WRITE,
 }
 
-#[derive(FromPrimitive, PartialEq, Eq)]
+#[derive(Debug, FromPrimitive, PartialEq, Eq)]
 pub enum Other {
     None,
     plus2SP,
