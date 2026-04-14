@@ -124,7 +124,8 @@ pub enum OpcodeB4 {
 pub struct AddressableInstruction {
     pub instruction: Instruction,
     pub address: u16,
-    pub size: InstructionSize
+    pub size: InstructionSize,
+    pub source_line: usize,
 }
 
 pub type SymbolTable = std::collections::HashMap<String, u16>;

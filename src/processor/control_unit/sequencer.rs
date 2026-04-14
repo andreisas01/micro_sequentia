@@ -3,16 +3,18 @@
 use crate::processor::architecture;
 use super::microarchitecture::*;
 
-pub fn run_meta_program(isa: &mut architecture::ISA, micro_arch: &mut MicroCode) {
-    let mut state = 0;
+pub struct Sequencer {
+    pub state: u8,
+}
 
-    while isa.BPO {
+impl Sequencer {
+    pub fn tick(&mut self, micro_arch: &mut MicroCode, isa: &mut architecture::ISA) {
         use MicroSignal::*;
 
-        match state {
+        match self.state {
             0 => {
                 micro_arch.process_microsignal(&LdMIR);
-                state = 1;
+                self.state = 1;
             }
 
             1 => {
@@ -21,7 +23,7 @@ pub fn run_meta_program(isa: &mut architecture::ISA, micro_arch: &mut MicroCode)
                 } else {
                     micro_arch.process_microsignal(&plus1MAR);
                 }
-                state = 2;
+                self.state = 2;
             }
 
             2 => {
@@ -34,12 +36,19 @@ pub fn run_meta_program(isa: &mut architecture::ISA, micro_arch: &mut MicroCode)
                 // isa.print_state(micro_arch);
                 // sleep(Duration::from_millis(10));
 
-                state = 0;
+                self.state = 0;
             }
 
             _ => unreachable!(),
         }
     }
 
-    // isa.MEM.print_memory_dump();
+    pub fn run_meta_program(&mut self, isa: &mut architecture::ISA, micro_arch: &mut MicroCode) {
+        while isa.BPO {
+            self.tick(micro_arch, isa);
+        }
+
+        // isa.MEM.print_memory_dump();
+    }
 }
+
