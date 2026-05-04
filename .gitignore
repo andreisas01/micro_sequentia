@@ -2,3 +2,5 @@
 *.asm
 *.obj
 *.exe
+
+!fibbonacci.asm
