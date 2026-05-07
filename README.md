@@ -32,6 +32,12 @@ The project models a word-oriented machine with 16-bit registers, a 4 KiB memory
 
 ## Build And Run
 
+Install the workspace binaries locally:
+
+```bash
+cargo install --path .
+```
+
 Build everything:
 
 ```bash
@@ -55,8 +61,11 @@ This reads the `.asm` file and writes `path/to/program.obj` next to it.
 Run the headless processor:
 
 ```bash
-cargo run --bin processor_cli -- path/to/program.obj
+cargo run --bin processor_cli -- path/to/program.obj [frequency_hz]
 ```
+
+If `frequency_hz` is provided, the CLI executes one micro-tick (`CPU::tick`) per period at that frequency.
+If omitted, the processor runs at maximum speed (`CPU::run`).
 
 Launch the GUI simulator:
 
@@ -187,6 +196,7 @@ The repository includes `fibbonacci.asm`, which computes a Fibonacci value and s
 ```bash
 cargo run --bin assembler_cli -- fibbonacci.asm
 cargo run --bin processor_cli -- fibbonacci.obj
+cargo run --bin processor_cli -- fibbonacci.obj 60
 ```
 
 ## Notes For Development
