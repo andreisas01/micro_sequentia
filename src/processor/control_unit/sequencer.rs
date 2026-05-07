@@ -8,7 +8,7 @@ pub struct Sequencer {
 }
 
 impl Sequencer {
-    pub fn tick(&mut self, micro_arch: &mut MicroCode, isa: &mut architecture::ISA) {
+    pub fn tick(&mut self, micro_arch: &mut MicroCode, isa: &mut architecture::ISA, print_to_stdout: bool) {
         use MicroSignal::*;
 
         match self.state {
@@ -33,8 +33,9 @@ impl Sequencer {
                     isa.BPO = false;
                 }
 
-                // isa.print_state(micro_arch);
-                // sleep(Duration::from_millis(10));
+                if print_to_stdout {
+                    isa.print_state(micro_arch);
+                }
 
                 self.state = 0;
             }
@@ -43,12 +44,15 @@ impl Sequencer {
         }
     }
 
-    pub fn run_meta_program(&mut self, isa: &mut architecture::ISA, micro_arch: &mut MicroCode) {
+    pub fn run_meta_program(&mut self, isa: &mut architecture::ISA, micro_arch: &mut MicroCode, frequency_hz: u32) {
+        let tick_period = std::time::Duration::from_secs_f64(1.0 / f64::from(frequency_hz));
+
         while isa.BPO {
-            self.tick(micro_arch, isa);
+            self.tick(micro_arch, isa, true);
+            std::thread::sleep(tick_period);
         }
 
-        // isa.MEM.print_memory_dump();
+        isa.MEM.print_memory_dump();
     }
 }
 

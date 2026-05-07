@@ -6,13 +6,15 @@ use rfd::FileDialog;
 use std::collections::HashMap;
 use std::fmt::Write as _;
 
+const APP_NAME: &str = "micro sequentia - CPU Simulator";
+
 fn main() -> eframe::Result {
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default().with_maximized(true),
         ..Default::default()
     };
     eframe::run_native(
-        "micro sequentia - CPU Simulator",
+        APP_NAME,
         options,
         Box::new(|_cc| {
             Ok(Box::<CPUSimulator>::default())

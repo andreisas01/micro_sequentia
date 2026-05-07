@@ -158,9 +158,11 @@ fn get_nth_bit(value: u16, n: u8) -> bool {
     (value & (1 << n)) != 0
 }
 
+const MICROPROGRAM_PATH: &str = "src/processor/control_unit/microprogram";
+
 #[allow(clippy::missing_panics_doc)]
 fn read_microprogram() -> Vec<u64> {
-    let microprogram = std::fs::read_to_string("src/processor/control_unit/microprogram").expect("Failed to read microprogram.txt.");
+    let microprogram = std::fs::read_to_string(MICROPROGRAM_PATH).expect("Failed to read microprogram.txt.");
     microprogram
         .lines()
         .map(|line| line.trim_start_matches("0x").trim())

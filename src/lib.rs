@@ -75,12 +75,14 @@ pub mod processor {
             }
         }
 
-        pub fn run(&mut self) {
-            self.control_unit.sequencer.run_meta_program(&mut self.isa, &mut self.control_unit.micro_code);
+        // only used for the CLI
+        pub fn run(&mut self, frequency_hz: u32) {
+            self.control_unit.sequencer.run_meta_program(&mut self.isa, &mut self.control_unit.micro_code, frequency_hz);
         }
 
+        // only used for the GUI
         pub fn tick(&mut self) {
-            self.control_unit.sequencer.tick(&mut self.control_unit.micro_code, &mut self.isa);
+            self.control_unit.sequencer.tick(&mut self.control_unit.micro_code, &mut self.isa, false);
         }
 
         pub fn is_halted(&self) -> bool {
