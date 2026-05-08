@@ -7,6 +7,9 @@ use std::collections::HashMap;
 use std::fmt::Write as _;
 
 const APP_NAME: &str = "micro sequentia - CPU Simulator";
+const COLOR_TANGERINE: egui::Color32 = egui::Color32::from_rgb(255, 70, 5);
+const COLOR_LIGHT_HIGHLIGHT: egui::Color32 = egui::Color32::from_rgb(255, 230, 120);
+const COLOR_DARK_GREEN: egui::Color32 = egui::Color32::from_rgb(0, 150, 100);
 
 fn main() -> eframe::Result {
     let options = eframe::NativeOptions {
@@ -37,6 +40,7 @@ struct CPUSimulator {
     previous_snapshot: Option<processor::CpuSnapshot>,
     status_message: String,
     status_is_error: bool,
+    is_light_mode: bool,
 }
 
 impl Default for CPUSimulator {
@@ -56,6 +60,7 @@ impl Default for CPUSimulator {
             previous_snapshot: None,
             status_message: "No program loaded".to_owned(),
             status_is_error: false,
+            is_light_mode: false,
         }
     }
 }
@@ -200,6 +205,11 @@ impl CPUSimulator {
 
 impl eframe::App for CPUSimulator {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        if self.is_light_mode {
+            ctx.set_visuals(egui::Visuals::light());
+        } else {
+            ctx.set_visuals(egui::Visuals::dark());
+        }
         if self.is_running {
             let dt = ctx.input(|input| input.stable_dt.max(0.0));
             self.tick_accumulator += f32::from(self.ticks_per_second) * dt;
@@ -221,7 +231,7 @@ impl eframe::App for CPUSimulator {
             .resizable(true)
             .default_width(560.0)
             .show(ctx, |ui| {
-            ui.heading("Program Control");
+            ui.heading(egui::RichText::new("Program Control").strong());
             let big_button_size = egui::vec2(150.0, 36.0);
             let has_loaded_program = !self.loaded_binary_path.is_empty();
             let editor_locked = self.is_running || !self.loaded_binary_path.is_empty();
@@ -283,11 +293,11 @@ impl eframe::App for CPUSimulator {
 
             ui.separator();
             ui.horizontal(|ui| {
-                ui.label("CPU Frequency");
+                ui.label(egui::RichText::new("CPU Frequency").strong());
                 ui.add(
                     egui::Slider::new(&mut self.ticks_per_second, 1..=2000),
                 );
-                ui.label("Hz");
+                ui.label(egui::RichText::new("Hz").strong());
 
                 ui.add_space(55.5);
                 if ui.add_enabled(
@@ -299,25 +309,37 @@ impl eframe::App for CPUSimulator {
             });
 
             if !self.loaded_binary_path.is_empty() {
-                ui.label(format!("Loaded binary: {}", self.loaded_binary_path));
+                ui.label(egui::RichText::new(format!("Loaded binary: {}", self.loaded_binary_path)).strong());
             }
 
-            if self.status_is_error {
-                ui.colored_label(egui::Color32::LIGHT_RED, self.status_message.as_str());
+            let ok_status_color = if self.is_light_mode {
+                COLOR_TANGERINE
             } else {
-                ui.colored_label(egui::Color32::LIGHT_GREEN, self.status_message.as_str());
+                egui::Color32::LIGHT_GREEN
+            };
+
+            if self.status_is_error {
+                ui.colored_label(egui::Color32::LIGHT_RED, egui::RichText::new(self.status_message.as_str()).strong());
+            } else {
+                ui.colored_label(ok_status_color, egui::RichText::new(self.status_message.as_str()).strong());
             }
+
+            let color = if self.is_light_mode {
+                COLOR_DARK_GREEN
+            } else {
+                egui::Color32::KHAKI
+            };
 
             if editor_locked {
                 ui.colored_label(
-                    egui::Color32::KHAKI,
-                    "ASM editor is locked while a binary is loaded (use RESET to unlock)",
+                    color,
+                    egui::RichText::new("ASM editor is locked while a binary is loaded (use RESET to unlock)").strong(),
                 );
             }
 
             ui.separator();
             ui.horizontal(|ui| {
-                ui.heading("ASM Editor");
+                ui.heading(egui::RichText::new("ASM Editor").strong());
                 if self.loaded_from_binary_file {
                     ui.colored_label(
                         egui::Color32::LIGHT_GRAY,
@@ -329,16 +351,17 @@ impl eframe::App for CPUSimulator {
                 ui.add_space(8.0);
                 ui.colored_label(
                     egui::Color32::GRAY,
-                    "Source view is hidden because a compiled .obj binary is loaded.",
+                    egui::RichText::new("Source view is hidden because a compiled .obj binary is loaded.").strong(),
                 );
                 ui.colored_label(
                     egui::Color32::GRAY,
-                    "Press RESET to unlock the editor, then load/open source if needed.",
+                    egui::RichText::new("Press RESET to unlock the editor, then load/open source if needed.").strong(),
                 );
             } else {
                 let snapshot = self.cpu.snapshot();
                 self.refresh_highlighted_line(&snapshot);
                 let highlighted_source_line = self.highlighted_source_line;
+                let is_light_mode = self.is_light_mode;
 
                 let mut layouter = move |ui: &egui::Ui, text: &dyn egui::TextBuffer, wrap_width: f32| {
                     let mut layout_job = egui::text::LayoutJob::default();
@@ -350,7 +373,11 @@ impl eframe::App for CPUSimulator {
                         ..Default::default()
                     };
                     let highlighted_format = egui::TextFormat {
-                        color: egui::Color32::from_rgb(255, 230, 120),
+                        color: if is_light_mode {
+                            COLOR_TANGERINE
+                        } else {
+                            COLOR_LIGHT_HIGHLIGHT
+                        },
                         ..normal_format.clone()
                     };
 
@@ -392,7 +419,18 @@ impl eframe::App for CPUSimulator {
 
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.label(egui::RichText::new("CPU Architecture").size(30.0).strong());
-            ui.label(egui::RichText::new("Live State Overview").size(16.0));
+            ui.horizontal(|ui| {
+                ui.label(egui::RichText::new("Live State Overview").size(16.0).strong());
+                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                    if ui.checkbox(&mut self.is_light_mode, egui::RichText::new("Light Mode").strong()).changed() {
+                        if self.is_light_mode {
+                            ctx.set_visuals(egui::Visuals::light());
+                        } else {
+                            ctx.set_visuals(egui::Visuals::dark());
+                        }
+                    }
+                });
+            });
             ui.separator();
 
             let bvi = (snapshot.flag & 0b1000_0000) != 0;
@@ -401,7 +439,11 @@ impl eframe::App for CPUSimulator {
             let s = (snapshot.flag & 0b0000_0010) != 0;
             let v = (snapshot.flag & 0b0000_0001) != 0;
 
-            let changed_color = egui::Color32::from_rgb(255, 230, 120);
+            let changed_color = if self.is_light_mode {
+                COLOR_TANGERINE
+            } else {
+                COLOR_LIGHT_HIGHLIGHT
+            };
             let value_text = |text: String, size: f32, changed: bool| {
                 let mut rich = egui::RichText::new(text).size(size).monospace();
                 if changed {
@@ -432,7 +474,7 @@ impl eframe::App for CPUSimulator {
                     ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
                         ui.label(egui::RichText::new("MEM").size(17.0).strong());
                         if ui
-                            .add_sized(egui::vec2(72.0, 20.0), egui::Button::new("Inspect"))
+                            .add_sized(egui::vec2(72.0, 20.0), egui::Button::new(egui::RichText::new("Inspect").strong()))
                             .clicked()
                         {
                             clicked = true;
@@ -445,7 +487,7 @@ impl eframe::App for CPUSimulator {
             };
 
             ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
-                ui.label(egui::RichText::new("Memory Interface").size(11.0).italics());
+                ui.label(egui::RichText::new("Memory Interface").size(11.0).italics().strong());
             });
             ui.separator();
             let mut open_memory_from_card = false;
@@ -470,7 +512,7 @@ impl eframe::App for CPUSimulator {
 
             ui.separator();
             ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
-                ui.label(egui::RichText::new("Buses").size(11.0).italics());
+                ui.label(egui::RichText::new("Buses").size(11.0).italics().strong());
             });
             ui.separator();
             ui.columns(1, |columns| {
@@ -498,7 +540,7 @@ impl eframe::App for CPUSimulator {
 
             ui.separator();
             ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
-                ui.label(egui::RichText::new("Registers").size(11.0).italics());
+                ui.label(egui::RichText::new("Registers").size(11.0).italics().strong());
             });
             ui.separator();
             ui.columns(4, |columns| {
@@ -530,7 +572,7 @@ impl eframe::App for CPUSimulator {
 
             ui.separator();
             ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
-                ui.label(egui::RichText::new("Control Unit").size(11.0).italics());
+                ui.label(egui::RichText::new("Control Unit").size(11.0).italics().strong());
             });
             ui.separator();
             ui.columns(2, |columns| {
@@ -563,7 +605,7 @@ impl eframe::App for CPUSimulator {
 
             ui.separator();
             ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
-                ui.label(egui::RichText::new("Status").size(11.0).italics());
+                ui.label(egui::RichText::new("Status").size(11.0).italics().strong());
             });
             ui.separator();
             ui.columns(3, |columns| {
@@ -597,7 +639,7 @@ impl eframe::App for CPUSimulator {
 
             ui.separator();
             ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
-                ui.label(egui::RichText::new("General Registers").size(11.0).italics());
+                ui.label(egui::RichText::new("General Registers").size(11.0).italics().strong());
             });
             ui.separator();
             ui.columns(8, |columns| {
@@ -628,7 +670,7 @@ impl eframe::App for CPUSimulator {
             let memory_bytes = self.cpu.isa.MEM.dump_bytes();
             let mut open = self.show_memory_inspector;
 
-            egui::Window::new("Memory Inspector")
+            egui::Window::new(egui::RichText::new("Memory Inspector").strong())
                 .open(&mut open)
                 .default_width(530.0)
                 .default_height(460.0)
@@ -652,7 +694,7 @@ impl eframe::App for CPUSimulator {
                                         .monospace()
                                         .strong(),
                                 );
-                                ui.label(egui::RichText::new(bytes_text).size(16.0).monospace());
+                                ui.label(egui::RichText::new(bytes_text).size(16.0).monospace().strong());
                             });
                         }
                     });
@@ -664,7 +706,7 @@ impl eframe::App for CPUSimulator {
         if self.show_mir_signals_popup {
             let mut open = self.show_mir_signals_popup;
 
-            egui::Window::new("MIR Signals Snapshot")
+            egui::Window::new(egui::RichText::new("MIR Signals Snapshot").strong())
                 .open(&mut open)
                 .default_width(340.0)
                 .resizable(false)
@@ -685,7 +727,7 @@ impl eframe::App for CPUSimulator {
                         format!("MEM: {}", mir_signals.memory),
                         format!("OTHER: {}", mir_signals.other),
                     ] {
-                        ui.label(egui::RichText::new(line).size(14.0).monospace());
+                        ui.label(egui::RichText::new(line).size(14.0).monospace().strong());
                     }
                 });
 
